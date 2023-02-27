@@ -139,6 +139,15 @@ export function useContractRouteConfig(
       component: LazyContractNFTPage,
     },
     {
+      title: "Unlockables",
+      path: "unlockables",
+      isEnabled: extensionDetectedState({
+        contractQuery,
+        feature: ["ERC1155", "ERC721"],
+      }),
+      component: LazyContractNFTPage,
+    },
+    {
       title: "Tokens",
       path: "tokens",
       isEnabled: extensionDetectedState({ contractQuery, feature: "ERC20" }),
