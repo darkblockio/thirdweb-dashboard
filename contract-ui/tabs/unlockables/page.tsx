@@ -10,7 +10,7 @@ interface NftUnlockablesPageProps {
   contractAddress?: string;
 }
 
-export const ContractNFTPage: React.FC<NftUnlockablesPageProps> = ({
+export const NftUnlockablesPage: React.FC<NftUnlockablesPageProps> = ({
   contractAddress,
 }) => {
 

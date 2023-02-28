@@ -62,6 +62,11 @@ const LazyContractPermissionsPage = dynamic(() =>
     ({ ContractPermissionsPage }) => ContractPermissionsPage,
   ),
 );
+const LazyContractUnloackablePage = dynamic(() =>
+  import("../tabs/unlockables/page").then(
+    ({ NftUnlockablesPage }) => NftUnlockablesPage,
+  ),
+);
 const LazyCustomContractEmbedPage = dynamic(() =>
   import("../tabs/embed/page").then(
     ({ CustomContractEmbedPage }) => CustomContractEmbedPage,
@@ -145,7 +150,7 @@ export function useContractRouteConfig(
         contractQuery,
         feature: ["ERC1155", "ERC721"],
       }),
-      component: LazyContractNFTPage,
+      component: LazyContractUnloackablePage,
     },
     {
       title: "Tokens",
