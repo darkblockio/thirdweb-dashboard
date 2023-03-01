@@ -166,7 +166,7 @@ export const EventsFeed: React.FC<EventsFeedProps> = ({ contractAddress }) => {
                 Transaction
               </Heading>
               <Heading gridColumn="span 5" size="label.md">
-                Name
+                Type
               </Heading>
               <Heading gridColumn="span 3" size="label.md">
                 Date
@@ -216,7 +216,8 @@ export const EventsFeed: React.FC<EventsFeedProps> = ({ contractAddress }) => {
 
   
   <Box gridColumn={['span 5', 'span 4']} fontWeight="bold">
-    {item.Name}
+    {/* {item.Name} */}
+    placeholder type
   </Box>
   <Box gridColumn={['span 3', 'span 4']} textAlign="right">
     {item['Date-Created']}
@@ -242,8 +243,7 @@ export const EventsFeed: React.FC<EventsFeedProps> = ({ contractAddress }) => {
               name="Transaction ID"
               value={item.id}
               description={`
-                  The number of the block in which the transaction was recorded.
-                  Block confirmation indicate how many blocks since the transaction was validated.
+                The transaction ID is a unique identifier for this transaction on the Arweave blockchain.
                 `}
             />
             <React.Fragment key={item.id}>
