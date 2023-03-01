@@ -28,15 +28,12 @@ import { useTrack } from "hooks/analytics/useTrack";
 import { useImageFileOrUrl } from "hooks/useImageFileOrUrl";
 import { useTxNotifications } from "hooks/useTxNotifications";
 import { useForm } from "react-hook-form";
-import { ThirdwebProvider, WalletConnector } from "@thirdweb-dev/react";
-
 import {
   Button,
   FormErrorMessage,
   FormHelperText,
   FormLabel,
   Heading,
-
 } from "tw-components";
 import { NFTMetadataInputLimited } from "types/modified-types";
 import { parseAttributes } from "utils/parseAttributes";

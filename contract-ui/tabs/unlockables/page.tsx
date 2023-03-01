@@ -5,6 +5,9 @@ import { detectFeatures } from "components/contract-components/utils";
 import { Card, Heading, LinkButton, Text } from "tw-components";
 import { EventsFeed } from "./components/events-feed";
 import { useEffect } from "react";
+import { Tabs, TabList, TabPanels, Tab, TabPanel } from '@chakra-ui/react'
+import { NFTGetAllTable } from "./components/table";
+
 
 interface NftUnlockablesPageProps {
   contractAddress?: string;
@@ -54,9 +57,30 @@ export const NftUnlockablesPage: React.FC<NftUnlockablesPageProps> = ({
           <NFTLazyMintButton contractQuery={contractQuery} />
         </Flex>
       </Flex>
-      <Flex direction="column" gap={6}>
-      <EventsFeed contractAddress={contractAddress} />
+      <Tabs>
+  <TabList>
+    <Tab>Upgrades</Tab>
+    <Tab>NFTs</Tab>
+    <Tab>Monetization</Tab>
+    <Tab>Analytics</Tab>
+  </TabList>
+
+  <TabPanels>
+    <TabPanel>
+    <EventsFeed contractAddress={contractAddress} />
+    </TabPanel>
+    <TabPanel>
+      <p>two!</p>
+    </TabPanel>
+    <TabPanel>
+      <p>three!</p>
+    </TabPanel>
+    <TabPanel>
+      <p>four!</p>
+    </TabPanel>
+  </TabPanels>
+</Tabs>
+      
     </Flex> 
-    </Flex>
   );
 };
