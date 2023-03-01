@@ -1,27 +1,30 @@
-import { useActivity } from "@3rdweb-sdk/react/hooks/useActivity";
 import {
-  Accordion,
-  AccordionButton,
-  AccordionItem,
-  AccordionPanel,
   Box,
-  ButtonGroup,
-  Center,
-  Divider,
   Flex,
-  FormControl,
-  Icon,
-  LightMode,
+  Heading,
   List,
-  Select,
-  SimpleGrid,
+  ListItem,
   Spinner,
-  Stack,
-  Switch,
-  Tooltip,
+  Text,
+  SimpleGrid,
+  useColorModeValue,
+  useDisclosure,
+  Divider,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
   useClipboard,
+  Center,
+  Icon,
   useToast,
+  Stack,
+  Tooltip,
+  Collapse,
 } from "@chakra-ui/react";
+import { useActivity } from "@3rdweb-sdk/react/hooks/useActivity";
+import { useAddress } from "@thirdweb-dev/react";
 import { AiOutlineQuestionCircle } from "@react-icons/all-files/ai/AiOutlineQuestionCircle";
 import type { ContractEvent } from "@thirdweb-dev/sdk/evm";
 import { AnimatePresence, motion } from "framer-motion";
@@ -34,223 +37,154 @@ import {
   Card,
   CodeBlock,
   FormLabel,
-  Heading,
-  Text,
 } from "tw-components";
 import { bigNumberReplacer } from "utils/bignumber";
 
-interface ContractTransaction {
-  transactionHash: ContractEvent["transaction"]["transactionHash"];
-  blockNumber: ContractEvent["transaction"]["blockNumber"];
-  events: ContractEvent[];
-}
 
 interface EventsFeedProps {
   contractAddress?: string;
 }
 
 export const EventsFeed: React.FC<EventsFeedProps> = ({ contractAddress }) => {
-  const [autoUpdate, setAutoUpdate] = useState(true);
-  const allEvents = useActivity(contractAddress, autoUpdate);
-  const event = useSingleQueryParam("event");
-  const [selectedEvent, setSelectedEvent] = useState(event || "all");
-
-  const chainName = useSingleQueryParam("networkOrAddress");
-  const router = useRouter();
-
-  const eventTypes = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...allEvents.flatMap(({ events }) =>
-            events.map(({ eventName }) => eventName),
-          ),
-        ]),
-      ),
-    [allEvents],
-  );
-
-  const filteredEvents = useMemo(
-    () =>
-      selectedEvent === "all"
-        ? allEvents
-        : allEvents.filter(({ events }) =>
-            events.some(({ eventName }) => eventName === selectedEvent),
-          ),
-    [allEvents, selectedEvent],
-  );
-
-  return (
-    <Flex gap={6} flexDirection="column">
-      <Flex align="center" justify="space-between" w="full">
-        <Flex gap={4} alignItems="center">
-          <Heading flexShrink={0} size="title.sm">
-            Upgrades
-          </Heading>
-          <Select
-            w="50%"
-            value={selectedEvent}
-            onChange={(e) => {
-              router.push(
-                {
-                  pathname: `/${chainName}/${contractAddress}/events`,
-                  query:
-                    e.target.value === "all"
-                      ? {
-                          event: e.target.value,
-                        }
-                      : undefined,
-                },
-                undefined,
-                { shallow: true },
-              );
-              setSelectedEvent(e.target.value);
-            }}
-          >
-            <option value="all">All</option>
-            {eventTypes.map((eventType) => (
-              <option key={eventType} value={eventType}>
-                {eventType}
-              </option>
-            ))}
-          </Select>
-        </Flex>
-        <Box>
-          <FormControl display="flex" alignItems="center">
-            <FormLabel htmlFor="auto-update" mb="0">
-              Auto-Update
-            </FormLabel>
-            <LightMode>
-              <Switch
-                isChecked={autoUpdate}
-                onChange={() => setAutoUpdate((val) => !val)}
-                id="auto-update"
-              />
-            </LightMode>
-          </FormControl>
-        </Box>
-      </Flex>
-      {contractAddress && (
-        <Card p={0} overflow="hidden">
-          <SimpleGrid
-            gap={2}
-            columns={12}
-            borderBottomWidth="1px"
-            borderColor="borderColor"
-            padding={4}
-            bg="blackAlpha.50"
-            _dark={{ bg: "whiteAlpha.50" }}
-          >
-            <Heading gridColumn="span 4" size="label.md">
-              Transaction Hash
-            </Heading>
-            <Heading gridColumn="span 5" size="label.md">
-              Events
-            </Heading>
-            <Heading gridColumn="span 3" size="label.md">
-              Block Number
-            </Heading>
-          </SimpleGrid>
-
-          <List overflow="auto">
-            {filteredEvents.length === 0 && (
-              <Center py={4}>
-                <Flex align="center" gap={2}>
-                  {autoUpdate && <Spinner size="sm" speed="0.69s" />}
-                  <Text size="body.md" fontStyle="italic">
-                    {autoUpdate ? "listening for events" : "no events to show"}
-                  </Text>
-                </Flex>
-              </Center>
-            )}
-            <Accordion
-              as={AnimatePresence}
-              initial={false}
-              allowMultiple
-              defaultIndex={[]}
-            >
-              {filteredEvents?.slice(0, 10).map((e) => (
-                <EventsFeedItem
-                  key={e.transactionHash}
-                  transaction={e}
-                  setSelectedEvent={setSelectedEvent}
-                  contractAddress={contractAddress}
-                />
-              ))}
-            </Accordion>
-          </List>
-        </Card>
-      )}
-    </Flex>
-  );
-};
-
-interface EventsFeedItemProps {
-  transaction: ContractTransaction;
-  setSelectedEvent: React.Dispatch<React.SetStateAction<string>>;
-  contractAddress: string;
-}
-
-export const EventsFeedItem: React.FC<EventsFeedItemProps> = ({
-  transaction,
-  setSelectedEvent,
-  contractAddress,
-}) => {
+  const [arweaveData, setArweaveData] = useState([]);
+  const [arweaveDataLoading, setArweaveDataLoading] = useState(false);
+  const [arweaveDataError, setArweaveDataError] = useState(null);
   const toast = useToast();
-  const { onCopy, setValue } = useClipboard(transaction.transactionHash);
+  const chainName = useSingleQueryParam("networkOrAddress");
+  const { onCopy, setValue } = useClipboard(arweaveData.id);
+  
+  const handleCopy = (index) => {
+    setValue(arweaveData[index].id);
+    onCopy();
+    toast({
+      variant: "solid",
+      position: "bottom",
+      title: "Transaction hash copied.",
+      status: "success",
+      duration: 5000,
+      isClosable: true,
+    });
+  };
+  
+  useEffect(() => {
+    const endpoint = "https://arweave.net/graphql";
+    const query = `
+      query {
+        transactions(
+          tags: [
+            { name: "NFT-Contract", values: "${contractAddress.toLowerCase()}" }
+          ]
+        ) {
+          edges {
+            node {
+              id
+              tags {
+                name
+                value
+              }
+            }
+          }
+        }
+      }
+    `;
+  
+    const fetchArweaveData = async () => {
+      setArweaveDataLoading(true);
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query }),
+        });
+        const { data } = await response.json();
+        const seenDataHashes = new Set();
+        const arweaveData = data.transactions.edges.reduce((acc, edge) => {
+          const { id, tags } = edge.node;
+          const dataHashTag = tags.find(tag => tag.name === "Data-Hash");
+          if (dataHashTag) {
+            const dataHash = dataHashTag.value;
+            if (!seenDataHashes.has(dataHash)) {
+              seenDataHashes.add(dataHash);
+              const tagMap = tags.reduce((tagAcc, tag) => {
+                tagAcc[tag.name] = tag.value;
+                return tagAcc;
+              }, {});
+              acc.push({
+                id,
+                ...tagMap,
+              });
+            }
+          }
+          return acc;
+        }, []);
+        setArweaveData(arweaveData);
+      } catch (error) {
+        setArweaveDataError(error);
+      } finally {
+        setArweaveDataLoading(false);
+      }
+    };
+  
+    fetchArweaveData();
+  }, [contractAddress, setArweaveData, setArweaveDataLoading, setArweaveDataError]);
 
   useEffect(() => {
-    if (transaction.transactionHash) {
-      setValue(transaction.transactionHash);
-    }
-  }, [transaction.transactionHash, setValue]);
-
-  const router = useRouter();
-  const chainName = useSingleQueryParam("networkOrAddress");
+    
+    console.log(arweaveData);
+    debugger;
+  }, [arweaveData]);
 
   return (
-    <AccordionItem
-      borderBottom="none"
-      borderColor="borderColor"
-      _first={{ borderTop: "none" }}
-    >
-      <AccordionButton padding={0}>
-        <SimpleGrid
-          columns={12}
-          gap={2}
-          as={motion.li}
-          initial={{
-            y: -30,
-            opacity: 0,
-            paddingTop: 0,
-            paddingBottom: 0,
-            height: 0,
-          }}
-          animate={{
-            y: 0,
-            opacity: 1,
-            height: "auto",
-            paddingTop: "var(--chakra-space-3)",
-            paddingBottom: "var(--chakra-space-3)",
-            transition: { duration: 0.15 },
-          }}
-          exit={{
-            y: 30,
-            opacity: 0,
-            paddingTop: 0,
-            paddingBottom: 0,
-            height: 0,
-            transition: { duration: 0.3 },
-          }}
-          willChange="opacity, height, paddingTop, paddingBottom"
-          borderBottomWidth="1px"
-          borderColor="borderColor"
-          padding={4}
-          overflow="hidden"
-          alignItems="center"
-          _last={{ borderBottomWidth: 0 }}
-        >
-          <Box gridColumn="span 3">
+  <Flex gap={6} flexDirection="column">
+  <Flex align="center" justify="space-between" w="full">
+    <Heading flexShrink={0} size="title.sm">
+      Upgrades
+    </Heading>
+  </Flex>
+  {contractAddress && (
+    <Box>
+      {arweaveDataLoading ? (
+        <Spinner size="xl" />
+      ) : arweaveDataError ? (
+        <Text color="red.500">
+          Failed to fetch data from Arweave: {arweaveDataError.message}
+        </Text>
+      ) : (
+        <List>
+          
+          <Card p={0} overflow="hidden">
+            <SimpleGrid
+              gap={2}
+              columns={12}
+              borderBottomWidth="1px"
+              borderColor="borderColor"
+              padding={4}
+              bg="blackAlpha.50"
+              _dark={{ bg: "whiteAlpha.50" }}
+            >
+              <Heading gridColumn="span 4" size="label.md">
+                Transaction
+              </Heading>
+              <Heading gridColumn="span 5" size="label.md">
+                Name
+              </Heading>
+              <Heading gridColumn="span 3" size="label.md">
+                Date
+              </Heading>
+            </SimpleGrid>
+          
+            <Accordion 
+            as={AnimatePresence}
+            initial={false}
+            allowMultiple
+            defaultIndex={[]}
+            >
+  {arweaveData?.map((item, index) => (
+    <AccordionItem key={index}>
+      <AccordionButton>
+      <SimpleGrid columns={[3, 12]} gap={2} padding={4} >
+
+      <Box gridColumn="span 3">
             <Stack direction="row" align="center" spacing={3}>
               <Tooltip
                 p={0}
@@ -268,128 +202,85 @@ export const EventsFeedItem: React.FC<EventsFeedItemProps> = ({
                   size="sm"
                   bg="transparent"
                   onClick={() => {
-                    onCopy();
-                    toast({
-                      variant: "solid",
-                      position: "bottom",
-                      title: "Transaction hash copied.",
-                      status: "success",
-                      duration: 5000,
-                      isClosable: true,
-                    });
+                    handleCopy(index);
                   }}
                 >
                   <Icon as={FiCopy} boxSize={3} />
                 </Button>
               </Tooltip>
               <Text fontFamily="mono" noOfLines={1}>
-                {transaction.transactionHash.slice(0, 32)}...
+                {item.id.slice(0, 32)}...
               </Text>
             </Stack>
           </Box>
 
-          <Box gridColumn="span 1" />
-
-          <ButtonGroup
-            size="sm"
-            variant="outline"
-            gridColumn="span 5"
-            flexWrap="wrap"
-            gap={2}
-            spacing={0}
-          >
-            {transaction.events.slice(0, 2).map((e, idx) => (
-              <Button
-                as="span"
-                key={idx}
-                onClick={(ev) => {
-                  ev.stopPropagation();
-                  router.push(
-                    `/${chainName}/${contractAddress}/events?event=${e.eventName}`,
-                    undefined,
-                    { shallow: true },
-                  );
-                  setSelectedEvent(e.eventName);
-                }}
-              >
-                {e.eventName}
-              </Button>
-            ))}
-            {transaction.events.length > 2 && (
-              <Button as="span" pointerEvents="none">
-                + {transaction.events.length - 2}
-              </Button>
-            )}
-          </ButtonGroup>
-
-          <Box gridColumn="span 3">
-            <Stack direction="row" justify="space-between">
-              <Text fontFamily="mono" noOfLines={1}>
-                {transaction.blockNumber}
-              </Text>
-              <Box>
+  
+  <Box gridColumn={['span 5', 'span 4']} fontWeight="bold">
+    {item.Name}
+  </Box>
+  <Box gridColumn={['span 3', 'span 4']} textAlign="right">
+    {item['Date-Created']}
+  </Box>
+  <Box>
                 <Icon as={FiChevronDown} />
               </Box>
-            </Stack>
-          </Box>
-        </SimpleGrid>
+</SimpleGrid>
+        <Icon
+          as={FiChevronDown}
+          display={['block', 'none']}
+          ml="auto"
+          boxSize={4}
+        />
       </AccordionButton>
       <AccordionPanel>
-        <Card>
-          <Stack spacing={4}>
-            <Heading size="subtitle.sm" fontWeight="bold">
+        <Stack spacing={4}>
+        <Heading size="subtitle.sm" fontWeight="bold">
               Transaction Data
             </Heading>
-
             <Divider />
-
             <TransactionData
-              name="Transaction Hash"
-              value={transaction.transactionHash}
-              description={`
-                  A transaction hash is a unique 66 character identifier
-                  that is generated whenever a transaction is executed.
-                `}
-            />
-
-            <TransactionData
-              name="Block Number"
-              value={transaction.blockNumber}
+              name="Transaction ID"
+              value={item.id}
               description={`
                   The number of the block in which the transaction was recorded.
                   Block confirmation indicate how many blocks since the transaction was validated.
                 `}
             />
-
-            <Heading size="subtitle.sm" fontWeight="bold" pt={6}>
-              Event Data
-            </Heading>
-
-            <Divider />
-
-            {transaction.events.map((event, idx, arr) => (
-              <React.Fragment
-                key={`${event.transaction.transactionHash}_${event.transaction.logIndex}`}
-              >
-                <SimpleGrid columns={12} gap={2}>
-                  <Box gridColumn="span 3">
-                    <Text fontWeight="bold">{event.eventName}</Text>
-                  </Box>
-
-                  <CodeBlock
-                    gridColumn="span 9"
-                    code={JSON.stringify(event.data, bigNumberReplacer, 2)}
-                    language="json"
-                  />
-                </SimpleGrid>
-
-                {arr.length - 1 === idx ? null : <Divider />}
+            <React.Fragment key={item.id}>
+              <SimpleGrid columns={[1, 2]} gap={4}>
+                <Box>
+                  <Text fontWeight="bold">Tags</Text>
+                </Box>
+                <CodeBlock
+                  gridColumn="span 9"
+                  language="json"
+                  code={JSON.stringify(item, null, 2)}
+                />
+              </SimpleGrid>
               </React.Fragment>
-            ))}
-          </Stack>
-        </Card>
+
+          {/* {Object.keys(item)
+            .filter(
+              (key) =>
+                !['id', 'Name', 'ArtId', 'Date-Created'].includes(key),
+            )
+            .map((key) => (
+              <Box key={key}>
+                <Text fontWeight="bold">{key}:</Text>
+                <Text>{item[key]}</Text>
+              </Box>
+            ))} */}
+        </Stack>
       </AccordionPanel>
     </AccordionItem>
+  ))}
+</Accordion>
+          </Card>
+        </List>
+      )}
+    </Box>
+  )}
+</Flex>
   );
 };
 
