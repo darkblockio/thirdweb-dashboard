@@ -70,13 +70,15 @@ export const NftUnlockablesPage: React.FC<NftUnlockablesPageProps> = ({
     <EventsFeed contractAddress={contractAddress} />
     </TabPanel>
     <TabPanel>
-      <p>two!</p>
+      <NFTGetAllTable contract={contractQuery.contract} />
     </TabPanel>
     <TabPanel>
-      <p>three!</p>
+    <NFTGetAllTable contract={contractQuery.contract} />
     </TabPanel>
     <TabPanel>
-      <p>four!</p>
+     
+      <img src="https://nftstorage.link/ipfs/bafkreia34vzgmzc3switwybrfapdgchncupyoq6lv4l3nfiwpxz72gx4ua" style={{width: "100%"}} />
+   
     </TabPanel>
   </TabPanels>
 </Tabs>

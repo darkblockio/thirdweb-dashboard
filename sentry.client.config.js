@@ -1,29 +1,8 @@
-import { sentryOptions } from "./sentry.config";
-// This file configures the initialization of Sentry on the browser.
-// The config you add here will be used whenever a page is visited.
-// https://docs.sentry.io/platforms/javascript/guides/nextjs/
-import * as Sentry from "@sentry/nextjs";
-
-const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
-
 Sentry.init({
-  dsn:
-    SENTRY_DSN ||
-    "https://8813f5d93c8c4aa89eda86816f0b1bbf@o1378374.ingest.sentry.io/6690186",
-  // Adjust this value in production, or use tracesSampler for greater control
-  tracesSampleRate: 0,
-  // ...
-  // Note: if you want to override the automatic release value, do not set a
-  // `release` value here - use the environment variable `SENTRY_RELEASE`, so
-  // that it will also get attached to your source maps
+  dsn: "https://5f394c093e9d41e2a5c5ff3b2ae26a97@o1087651.ingest.sentry.io/6101188",
 
-  // replays
-  // don't record replays for generic sessions
-  replaysSessionSampleRate: 0,
-  // record replays for errors
-  replaysOnErrorSampleRate: 1.0,
-  integrations: [new Sentry.Replay()],
-
-  ignoreErrors: sentryOptions.ignoreErrors,
-  denyUrls: sentryOptions.denyUrls,
+  // Set tracesSampleRate to 1.0 to capture 100%
+  // of transactions for performance monitoring.
+  // We recommend adjusting this value in production
+  tracesSampleRate: 1.0,
 });

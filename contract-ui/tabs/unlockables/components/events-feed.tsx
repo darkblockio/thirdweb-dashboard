@@ -50,14 +50,17 @@ interface EventsFeedProps {
 }
 
 export const EventsFeed: React.FC<EventsFeedProps> = ({ contractAddress }) => {
-  const [arweaveData, setArweaveData] = useState([]);
+  const [arweaveData, setArweaveData] = useState<{ id: string, [key: string]: any }[]>([]);
+
   const [arweaveDataLoading, setArweaveDataLoading] = useState(false);
-  const [arweaveDataError, setArweaveDataError] = useState(null);
+  const [arweaveDataError, setArweaveDataError] = useState("");
   const toast = useToast();
   const chainName = useSingleQueryParam("networkOrAddress");
-  const { onCopy, setValue } = useClipboard(arweaveData.id);
+  const { onCopy, setValue } = useClipboard(arweaveData && arweaveData.length > 0 ? arweaveData[0].id : '');
 
-  const handleCopy = (index) => {
+
+
+  const handleCopy = (index: number) => {
     setValue(arweaveData[index].id);
     onCopy();
     toast({
@@ -72,25 +75,28 @@ export const EventsFeed: React.FC<EventsFeedProps> = ({ contractAddress }) => {
 
   useEffect(() => {
     const endpoint = "https://arweave.net/graphql";
-    const query = `
-      query {
-        transactions(
-          tags: [
-            { name: "NFT-Contract", values: "${contractAddress.toLowerCase()}" }
-          ]
-        ) {
-          edges {
-            node {
-              id
-              tags {
-                name
-                value
+    if (contractAddress) {
+      const query = `
+        query {
+          transactions(
+            tags: [
+              { name: "NFT-Contract", values: "${contractAddress.toLowerCase()}" }
+            ]
+          ) {
+            edges {
+              node {
+                id
+                tags {
+                  name
+                  value
+                }
               }
             }
           }
         }
-      }
-    `;
+      `;
+      // Your query code goes here
+    
 
     const fetchArweaveData = async () => {
       setArweaveDataLoading(true);
@@ -102,34 +108,39 @@ export const EventsFeed: React.FC<EventsFeedProps> = ({ contractAddress }) => {
         });
         const { data } = await response.json();
         const seenDataHashes = new Set();
-        const arweaveData = data.transactions.edges.reduce((acc, edge) => {
-          const { id, tags } = edge.node;
-          const dataHashTag = tags.find(tag => tag.name === "Data-Hash");
-          if (dataHashTag) {
-            const dataHash = dataHashTag.value;
-            if (!seenDataHashes.has(dataHash)) {
-              seenDataHashes.add(dataHash);
-              const tagMap = tags.reduce((tagAcc, tag) => {
-                tagAcc[tag.name] = tag.value;
-                return tagAcc;
-              }, {});
-              acc.push({
-                id,
-                ...tagMap,
-              });
+        const arweaveData: { id: string; [key: string]: any }[] = data.transactions.edges.reduce(
+          (acc: { id: string; [key: string]: any }[], edge: { node: { id: string; tags: { name: string; value: string }[] } }) => {
+            const { id, tags } = edge.node;
+            const dataHashTag = tags.find((tag: { name: string; value: string }) => tag.name === "Data-Hash");
+            if (dataHashTag) {
+              const dataHash = dataHashTag.value;
+              if (!seenDataHashes.has(dataHash)) {
+                seenDataHashes.add(dataHash);
+                const tagMap = tags.reduce((tagAcc, tag) => {
+                  tagAcc[tag.name] = tag.value;
+                  return tagAcc;
+                }, {} as { [key: string]: string });
+                acc.push({
+                  id,
+                  ...tagMap,
+                });
+              }
             }
-          }
-          return acc;
-        }, []);
+            return acc;
+          },
+          []
+        );
         setArweaveData(arweaveData);
       } catch (error) {
-        setArweaveDataError(error);
+        setArweaveDataError("Failed to fetch data from Arweave");
       } finally {
         setArweaveDataLoading(false);
       }
     };
+  
 
     fetchArweaveData();
+  }
   }, [contractAddress, setArweaveData, setArweaveDataLoading, setArweaveDataError]);
 
   useEffect(() => {
@@ -139,9 +150,9 @@ export const EventsFeed: React.FC<EventsFeedProps> = ({ contractAddress }) => {
   }, [arweaveData]);
 
   return (
-    <Flex gap={6} flexDirection="column">
+    <Flex gap={4} flexDirection="column">
       <Flex align="center" justify="space-between" w="full">
-        <Flex gap={4} alignItems="center">
+       <Flex gap={2} alignItems="center">
           {/* <Heading flexShrink={0} size="title.sm">
             Upgrades
           </Heading> */}
@@ -164,35 +175,35 @@ export const EventsFeed: React.FC<EventsFeedProps> = ({ contractAddress }) => {
 
       </Flex>
       {contractAddress && (
-        <Box>
+        <React.Fragment>
           {arweaveDataLoading ? (
             <Spinner size="xl" />
           ) : arweaveDataError ? (
             <Text color="red.500">
-              Failed to fetch data from Arweave: {arweaveDataError.message}
+              Failed to fetch data from Arweave: {arweaveDataError}
             </Text>
           ) : (
-            <List>
+            
 
               <Card p={0} overflow="hidden">
                 <SimpleGrid
                   gap={2}
-                  columns={12}
+                  columns={48}
                   borderBottomWidth="1px"
                   borderColor="borderColor"
-                  padding={4}
+                  padding={2}
                   bg="blackAlpha.50"
                   _dark={{ bg: "whiteAlpha.50" }}
                 >
-                  <Heading gridColumn="span 4" size="title.sm">
+                  <Text gridColumn="span 17" size="label.sm">
                     Transaction
-                  </Heading>
-                  <Heading gridColumn="span 5" size="label.sm">
+                  </Text>
+                  <Text gridColumn="span 21" size="label.sm">
                     Type
-                  </Heading>
-                  <Heading gridColumn="span 3" size="label.sm">
+                  </Text>
+                  <Text gridColumn="span 3" size="label.sm">
                     Date
-                  </Heading>
+                  </Text>
                 </SimpleGrid>
 
                 <Accordion
@@ -205,7 +216,7 @@ export const EventsFeed: React.FC<EventsFeedProps> = ({ contractAddress }) => {
                     <AccordionItem
                       key={index}>
                       <AccordionButton>
-                        <SimpleGrid columns={[3, 12]} gap={2} padding={4} >
+                        <SimpleGrid columns={[3, 12]} gap={2} padding={1} >
 
                           <Box gridColumn="span 3">
                             <Stack direction="row" align="center" spacing={3}>
@@ -240,7 +251,13 @@ export const EventsFeed: React.FC<EventsFeedProps> = ({ contractAddress }) => {
 
                           <Box gridColumn={['span 5', 'span 4']} fontWeight="bold">
                             {/* {item.Name} */}
-                            placeholder type
+                            
+                            <Button
+                            size="sm"
+                            bg="transparent"
+                            >
+                            Darkblock Upgrade
+                            </Button>
                           </Box>
                           <Box gridColumn={['span 3', 'span 4']} textAlign="right">
                             {item['Date-Created']}
@@ -299,9 +316,9 @@ export const EventsFeed: React.FC<EventsFeedProps> = ({ contractAddress }) => {
                   ))}
                 </Accordion>
               </Card>
-            </List>
+           
           )}
-        </Box>
+        </React.Fragment>
       )}
     </Flex>
   );
