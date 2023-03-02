@@ -1,5 +1,5 @@
 import { NFTLazyMintButton } from "./components/lazy-mint-button";
-import { Box, Flex } from "@chakra-ui/react";
+import { Box, Flex, Grid } from "@chakra-ui/react";
 import { useContract } from "@thirdweb-dev/react";
 import { detectFeatures } from "components/contract-components/utils";
 import { Card, Heading, LinkButton, Text } from "tw-components";
@@ -73,11 +73,11 @@ export const NftUnlockablesPage: React.FC<NftUnlockablesPageProps> = ({
       <NFTGetAllTable contract={contractQuery.contract} />
     </TabPanel>
     <TabPanel>
-    <NFTGetAllTable contract={contractQuery.contract} />
+    <img src="https://nftstorage.link/ipfs/bafkreiat5supqlajhcuxx62i6oirddhx3vh4xrwnueyd5vconrvszkuujy" style={{width: "100%", marginLeft: "auto", marginRight: "auto", paddingTop: "10px"}} />
     </TabPanel>
     <TabPanel>
-     
-      <img src="https://nftstorage.link/ipfs/bafkreia34vzgmzc3switwybrfapdgchncupyoq6lv4l3nfiwpxz72gx4ua" style={{width: "100%"}} />
+    
+      <img src="https://nftstorage.link/ipfs/bafkreic4soik7mveprcm5uyaezvjatxnpop2emn63qdd2ydzkj4qraek4q" style={{width: "90%", marginLeft: "auto", marginRight: "auto", paddingTop: "20px"}} />  
    
     </TabPanel>
   </TabPanels>
