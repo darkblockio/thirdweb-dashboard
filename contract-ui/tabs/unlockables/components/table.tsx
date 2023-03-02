@@ -92,11 +92,12 @@ export const NFTGetAllTable: React.FC<ContractOverviewNFTGetAllProps> = ({
     }
     if (isErc1155) {
       cols.push({
-        Header: "Supply",
+        Header: "Unlockables",
         accessor: (row) => row.supply,
         Cell: (cell: CellProps<NFT, number>) => (
           <Text noOfLines={4} size="body.md" fontFamily="mono">
-            {cell.value}
+            {/* {cell.value} */}
+            2
           </Text>
         ),
       });
